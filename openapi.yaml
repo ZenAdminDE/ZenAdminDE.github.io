@@ -1,0 +1,182 @@
+openapi: 3.0.0
+info:
+  version: "1.0"
+  title: ZenAdmin iPaaS
+  description: API for reading and writing data to ZenAdmin iPaaS   
+x-readme:
+  samples-languages:
+    - "curl"
+    - "python"
+    - "ruby"
+    - "java"
+    - "php"
+    - "node"
+paths:
+  /auth:
+    post:
+      description: 'Request Authentication Token'
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                  description: API Client id
+                client_secret:
+                  type: string
+                  description: API Client secret
+              required:
+                - client_id
+                - client_secret
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                  description: API Client id
+                client_secret:
+                  type: string
+                  description: API Client secret
+              required:
+                - client_id
+                - client_secret
+      responses:
+        '200':
+          description: 'Authentication token response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationTokenResponse'
+              examples:
+                response:
+                  value:
+                    success: true
+                    data:
+                      token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vYXBpLmRldi5wZXJzb25pby5kZTozMDAwMS92MS9hdXRoIiwiaWF0IjoxNDg5MDkxMzA2LCJleHAiOjE0ODkxNzc3MDYsIm5iZiI6MTQ4OTA5MTMwNiwianRpIjoiZmU1ZjkxOGY2MDZjOWI4OGMwMzM0ZmJkZjkyYzkwMzgiLCJzdWIiOiJPR014TVdRd1kySmxZbVF6Tm1RNVpqQmxOell6WmpsaSJ9.QZZCdlDjmL-LYdoDx2XLUfhwTdcjDgm9h4t-6JoACiM"
+  /connector/users:
+    parameters:
+      - $ref: "#/components/parameters/XZenAdminPartnerID"
+      - $ref: "#/components/parameters/XZenAdminAppID"
+    post:
+      security:
+        - BearerAuth: []
+      tags:
+        - Users
+      summary: populates the list of users for a saas connector
+      description: >
+        Populates the saas user list. Performs a complete refresh.   Please do not use this endpoint for incremental patch events as users not returned in this list are marked as deleted in ZAP. The email serves as the primary identifier for correlation and is required in the request. This endpoint returns a boolean indicating the success of the operation.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    example: "jim.smith@saas.com"
+                    description: The e-mail field is required for the employee correlation.
+                  first_name:
+                    type: string
+                    example: "Jim"
+                  last_name:
+                    type: string
+                    example: "Smith"
+                  custom_attributes:
+                      type: object
+                required:
+                  - email
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                "email":
+                  description: User email
+                  type: string
+                "first_name":
+                  description: User first name
+                  type: string
+                "last_name":
+                  description: User last name
+                  type: string
+                "custom_attributes":
+                  description: User custom_attributes
+                  type: object
+              required:
+                - email
+      responses:
+        "200":
+          description: Successful population of a userlist
+          content:
+            application/json:
+              examples:
+                response:
+                  value:
+                    success: true
+        "400":
+          description: User list population failed due to invalid request payload
+          content:
+            application/json:
+              examples:
+                response:
+                  value:
+                    success: false
+                    error:
+                      code: 400
+                      message: "Invalid Request Payload"
+
+servers:
+  - url: https://api.zenadmin.de/v1
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    XZenAdminPartnerID:
+      name: X-ZenAdmin-Partner-ID
+      in: header
+      required: false
+      description: The partner identifier
+      schema:
+        type: string
+    XZenAdminAppID:
+      name: X-ZenAdmin-App-ID
+      in: header
+      required: false
+      description: The saas application identifier
+      schema:
+        type: string
+  schemas:
+    Response:
+      title: Default response object
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+      required:
+        - success
+        - data
+    AuthenticationTokenResponse:
+      title: Request Authentication Token response
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+
+
